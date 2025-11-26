@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}PIN 변경 - Simple-ID{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-fingerprint"></i> PIN 변경
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>안내:</strong> 
+                    PIN은 인증 확인 시 사용되는 6자리 숫자입니다.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.old_pin.id_for_label }}" class="form-label">
+                            <i class="fas fa-key"></i> 현재 PIN
+                        </label>
+                        {{ form.old_pin }}
+                        {% if form.old_pin.errors %}
+                        <div class="text-danger small">{{ form.old_pin.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.new_pin1.id_for_label }}" class="form-label">
+                            <i class="fas fa-lock"></i> 새 PIN (6자리)
+                        </label>
+                        {{ form.new_pin1 }}
+                        {% if form.new_pin1.errors %}
+                        <div class="text-danger small">{{ form.new_pin1.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.new_pin2.id_for_label }}" class="form-label">
+                            <i class="fas fa-lock"></i> 새 PIN 확인
+                        </label>
+                        {{ form.new_pin2 }}
+                        {% if form.new_pin2.errors %}
+                        <div class="text-danger small">{{ form.new_pin2.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-info text-white btn-lg">
+                            <i class="fas fa-check"></i> PIN 변경
+                        </button>
+                        <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> 취소
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

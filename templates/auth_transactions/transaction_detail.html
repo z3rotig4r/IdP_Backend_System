@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+
+{% block title %}인증 상세 - Simple-ID{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- 기본 정보 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> 트랜잭션 정보
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>트랜잭션 ID:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <code>{{ object.transaction_id }}</code>
+                        <button class="btn btn-sm btn-outline-secondary" 
+                                onclick="copyToClipboard('{{ object.transaction_id }}')">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>상태:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {% if object.status == 'PENDING' %}
+                        <span class="badge bg-warning fs-6">
+                            <i class="fas fa-clock"></i> 대기중
+                        </span>
+                        {% elif object.status == 'COMPLETED' %}
+                        <span class="badge bg-success fs-6">
+                            <i class="fas fa-check-circle"></i> 완료
+                        </span>
+                        {% elif object.status == 'FAILED' %}
+                        <span class="badge bg-danger fs-6">
+                            <i class="fas fa-times-circle"></i> 실패
+                        </span>
+                        {% elif object.status == 'EXPIRED' %}
+                        <span class="badge bg-secondary fs-6">
+                            <i class="fas fa-hourglass-end"></i> 만료
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>서비스 제공자:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ object.service_provider.service_name }}
+                        <br>
+                        <small class="text-muted">
+                            <i class="fas fa-link"></i> 
+                            <a href="{{ object.callback_url }}" target="_blank">
+                                {{ object.callback_url|truncatechars:50 }}
+                            </a>
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>사용자:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ object.user.username }}
+                        <br>
+                        <small class="text-muted">{{ object.user.email }}</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>요청 시간:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <i class="fas fa-calendar-alt"></i> 
+                        {{ object.requested_at|date:"Y년 m월 d일 H:i:s" }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>만료 시간:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <i class="fas fa-hourglass-end"></i> 
+                        <span class="{% if object.is_expired %}text-danger{% endif %}">
+                            {{ object.expires_at|date:"Y년 m월 d일 H:i:s" }}
+                        </span>
+                        {% if object.is_expired %}
+                        <span class="badge bg-danger">만료됨</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if object.confirmed_at %}
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>확인 시간:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <i class="fas fa-check"></i> 
+                        {{ object.confirmed_at|date:"Y년 m월 d일 H:i:s" }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 보안 정보 -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt"></i> 보안 정보
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>요청 IP:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <code>{{ object.request_ip }}</code>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>User Agent:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <small class="text-muted">{{ object.user_agent|truncatechars:100 }}</small>
+                    </div>
+                </div>
+                
+                {% if object.failure_reason %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>실패 원인:</strong> {{ object.failure_reason }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- 타임라인 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock"></i> 타임라인
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="timeline">
+                    <li class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <p class="mb-0"><strong>인증 요청</strong></p>
+                            <small class="text-muted">
+                                {{ object.requested_at|date:"Y-m-d H:i:s" }}
+                            </small>
+                        </div>
+                    </li>
+                    
+                    {% if object.confirmed_at %}
+                    <li class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <p class="mb-0"><strong>인증 확인</strong></p>
+                            <small class="text-muted">
+                                {{ object.confirmed_at|date:"Y-m-d H:i:s" }}
+                            </small>
+                        </div>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="timeline-item">
+                        <div class="timeline-marker {% if object.is_expired %}bg-danger{% else %}bg-warning{% endif %}"></div>
+                        <div class="timeline-content">
+                            <p class="mb-0"><strong>만료 예정</strong></p>
+                            <small class="text-muted">
+                                {{ object.expires_at|date:"Y-m-d H:i:s" }}
+                            </small>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 알림 로그 -->
+        {% if notifications %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell"></i> 알림 로그
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for notification in notifications %}
+                <div class="border-bottom pb-2 mb-2">
+                    <span class="badge bg-{{ notification.notification_type|lower }}">
+                        {{ notification.get_notification_type_display }}
+                    </span>
+                    <br>
+                    <small class="text-muted">
+                        {{ notification.sent_at|date:"Y-m-d H:i:s" }}
+                    </small>
+                    {% if notification.is_success %}
+                    <span class="badge bg-success">성공</span>
+                    {% else %}
+                    <span class="badge bg-danger">실패</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{% url 'auth_transactions:auth_history' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> 목록으로
+    </a>
+</div>
+
+<style>
+.timeline {
+    list-style: none;
+    padding: 0;
+    position: relative;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3px solid white;
+}
+
+.timeline-content {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+</style>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert('클립보드에 복사되었습니다!');
+    });
+}
+</script>
+{% endblock %}

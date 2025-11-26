@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}대시보드 - Simple-ID{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <h2>
+            <i class="fas fa-tachometer-alt"></i> 대시보드
+        </h2>
+        <p class="text-muted">안녕하세요, {{ user.username }}님!</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">총 인증 요청</h6>
+                        <h3 class="mb-0">{{ auth_stats.total }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="fas fa-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">성공</h6>
+                        <h3 class="mb-0 text-success">{{ auth_stats.completed }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">실패</h6>
+                        <h3 class="mb-0 text-danger">{{ auth_stats.failed }}</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="fas fa-times-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">대기 중</h6>
+                        <h3 class="mb-0 text-warning">{{ auth_stats.pending }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i> 최근 인증 이력
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>서비스</th>
+                                <th>상태</th>
+                                <th>요청 시간</th>
+                                <th>만료 시간</th>
+                                <th>액션</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tx in recent_transactions %}
+                            <tr>
+                                <td>
+                                    <code>{{ tx.transaction_id|truncatechars:16 }}</code>
+                                </td>
+                                <td>{{ tx.service_provider.service_name }}</td>
+                                <td>
+                                    {% if tx.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> 완료
+                                    </span>
+                                    {% elif tx.status == 'PENDING' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-clock"></i> 대기 중
+                                    </span>
+                                    {% elif tx.status == 'FAILED' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times"></i> 실패
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-ban"></i> 만료
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ tx.created_at|date:"Y-m-d H:i:s" }}</td>
+                                <td>{{ tx.expires_at|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    <a href="{% url 'auth_transactions:transaction_detail' tx.transaction_id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> 상세
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-end">
+                    <a href="{% url 'auth_transactions:auth_history' %}" class="btn btn-primary">
+                        <i class="fas fa-list"></i> 전체 이력 보기
+                    </a>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">아직 인증 이력이 없습니다.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt"></i> 빠른 액션
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'accounts:profile' %}" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="fas fa-user"></i><br>
+                            프로필 보기
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'auth_transactions:auth_history' %}" class="btn btn-outline-success btn-lg w-100">
+                            <i class="fas fa-history"></i><br>
+                            인증 이력
+                        </a>
+                    </div>
+                    {% if user.is_staff %}
+                    <div class="col-md-4 mb-2">
+                        <a href="/admin/" class="btn btn-outline-info btn-lg w-100">
+                            <i class="fas fa-cog"></i><br>
+                            관리자 페이지
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

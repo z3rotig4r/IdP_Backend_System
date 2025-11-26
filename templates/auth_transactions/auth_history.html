@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}인증 이력 - Simple-ID{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">
+            <i class="fas fa-history"></i> 인증 이력
+        </h4>
+    </div>
+    <div class="card-body">
+        <!-- 필터 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <select class="form-select" id="statusFilter">
+                    <option value="">전체 상태</option>
+                    <option value="PENDING">대기중</option>
+                    <option value="COMPLETED">완료</option>
+                    <option value="FAILED">실패</option>
+                    <option value="EXPIRED">만료</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" class="form-control" id="dateFrom" placeholder="시작일">
+            </div>
+            <div class="col-md-3">
+                <input type="date" class="form-control" id="dateTo" placeholder="종료일">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary w-100" onclick="applyFilter()">
+                    <i class="fas fa-filter"></i> 필터 적용
+                </button>
+            </div>
+        </div>
+        
+        <!-- 통계 카드 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-primary">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">총 요청</h6>
+                        <h3 class="text-primary">{{ page_obj.paginator.count }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">성공</h6>
+                        <h3 class="text-success">{{ stats.completed }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-danger">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">실패</h6>
+                        <h3 class="text-danger">{{ stats.failed }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">대기중</h6>
+                        <h3 class="text-warning">{{ stats.pending }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 테이블 -->
+        {% if object_list %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>트랜잭션 ID</th>
+                        <th>서비스 제공자</th>
+                        <th>상태</th>
+                        <th>요청 시간</th>
+                        <th>만료 시간</th>
+                        <th>IP 주소</th>
+                        <th>액션</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in object_list %}
+                    <tr>
+                        <td>
+                            <code class="small">{{ transaction.transaction_id|truncatechars:13 }}</code>
+                        </td>
+                        <td>{{ transaction.service_provider.service_name }}</td>
+                        <td>
+                            {% if transaction.status == 'PENDING' %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-clock"></i> 대기중
+                            </span>
+                            {% elif transaction.status == 'COMPLETED' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> 완료
+                            </span>
+                            {% elif transaction.status == 'FAILED' %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times-circle"></i> 실패
+                            </span>
+                            {% elif transaction.status == 'EXPIRED' %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-hourglass-end"></i> 만료
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>{{ transaction.requested_at|date:"Y-m-d H:i:s" }}</td>
+                        <td>
+                            <span class="{% if transaction.is_expired %}text-danger{% endif %}">
+                                {{ transaction.expires_at|date:"Y-m-d H:i:s" }}
+                            </span>
+                        </td>
+                        <td>
+                            <code class="small">{{ transaction.request_ip }}</code>
+                        </td>
+                        <td>
+                            <a href="{% url 'auth_transactions:transaction_detail' transaction.transaction_id %}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> 상세
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 페이지네이션 -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle fa-3x mb-3"></i>
+            <h5>인증 이력이 없습니다</h5>
+            <p class="mb-0">아직 인증 요청을 처리한 기록이 없습니다.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function applyFilter() {
+    const status = document.getElementById('statusFilter').value;
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    
+    let url = '{% url "auth_transactions:auth_history" %}?';
+    if (status) url += `status=${status}&`;
+    if (dateFrom) url += `date_from=${dateFrom}&`;
+    if (dateTo) url += `date_to=${dateTo}`;
+    
+    window.location.href = url;
+}
+</script>
+{% endblock %}

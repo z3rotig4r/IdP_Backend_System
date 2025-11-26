@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}프로필 - Simple-ID{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-circle fa-5x text-primary mb-3"></i>
+                <h4>{{ user.username }}</h4>
+                <p class="text-muted">{{ user.email }}</p>
+                <hr>
+                <div class="text-start">
+                    <p>
+                        <i class="fas fa-phone text-primary"></i> 
+                        <strong>전화번호:</strong><br>
+                        <span class="text-muted">{{ user.phone_number|default:"미등록" }}</span>
+                    </p>
+                    <p>
+                        <i class="fas fa-calendar text-primary"></i> 
+                        <strong>가입일:</strong><br>
+                        <span class="text-muted">{{ user.date_joined|date:"Y년 m월 d일" }}</span>
+                    </p>
+                    <p>
+                        <i class="fas fa-clock text-primary"></i> 
+                        <strong>마지막 로그인:</strong><br>
+                        <span class="text-muted">{{ user.last_login|date:"Y-m-d H:i" }}</span>
+                    </p>
+                    <p>
+                        <i class="fas fa-shield-alt text-primary"></i> 
+                        <strong>계정 상태:</strong><br>
+                        {% if user.is_active %}
+                        <span class="badge bg-success">활성</span>
+                        {% else %}
+                        <span class="badge bg-danger">비활성</span>
+                        {% endif %}
+                        {% if user.is_staff %}
+                        <span class="badge bg-info">관리자</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-users"></i> 역할
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if user_roles %}
+                <ul class="list-unstyled mb-0">
+                    {% for role in user_roles %}
+                    <li>
+                        <i class="fas fa-check-circle text-success"></i> 
+                        {{ role.role.get_role_name_display }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">할당된 역할이 없습니다.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- 보안 정보 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt"></i> 보안 정보
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h6 class="text-muted">CI (고유 식별 정보)</h6>
+                            <code class="text-muted">*********************</code>
+                            <p class="small text-muted mb-0 mt-2">
+                                <i class="fas fa-info-circle"></i> 
+                                보안상 마스킹 처리됨
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h6 class="text-muted">DI (서비스 연계 정보)</h6>
+                            <code class="text-muted">*********************</code>
+                            <p class="small text-muted mb-0 mt-2">
+                                <i class="fas fa-info-circle"></i> 
+                                보안상 마스킹 처리됨
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>보안 주의:</strong> 
+                    CI/DI는 본인확인 서비스에서만 사용되며, AES-256-GCM으로 암호화되어 저장됩니다.
+                </div>
+            </div>
+        </div>
+        
+        <!-- 계정 통계 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar"></i> 계정 통계
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-primary">{{ auth_stats.total }}</h3>
+                            <p class="text-muted mb-0">총 인증 요청</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-success">{{ auth_stats.completed }}</h3>
+                            <p class="text-muted mb-0">인증 성공</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-danger">{{ auth_stats.failed }}</h3>
+                            <p class="text-muted mb-0">인증 실패</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 액션 버튼 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog"></i> 계정 관리
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-key"></i> 비밀번호 변경
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <a href="{% url 'accounts:change_pin' %}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-lock"></i> PIN 변경
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <a href="{% url 'auth_transactions:auth_history' %}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-history"></i> 인증 이력
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-tachometer-alt"></i> 대시보드
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
