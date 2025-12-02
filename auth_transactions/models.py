@@ -56,6 +56,11 @@ class AuthTransaction(models.Model):
         db_index=True,
         help_text="When this transaction expires (typically 3 minutes)"
     )
+    confirmed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the user confirmed/rejected this transaction"
+    )
     auth_code = models.CharField(
         max_length=64,
         unique=True,
@@ -107,13 +112,14 @@ class AuthTransaction(models.Model):
         """Generate a secure one-time authorization code"""
         return secrets.token_urlsafe(48)
     
+    @property
     def is_expired(self):
         """Check if this transaction has expired"""
         return timezone.now() > self.expires_at
     
     def can_be_confirmed(self):
         """Check if this transaction can be confirmed"""
-        return self.status == 'PENDING' and not self.is_expired()
+        return self.status == 'PENDING' and not self.is_expired
     
     def __str__(self):
         return f"{self.transaction_id} - {self.user.username} - {self.status}"

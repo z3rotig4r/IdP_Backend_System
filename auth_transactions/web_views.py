@@ -6,9 +6,35 @@ from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.views import View
+from django.utils import timezone
 from datetime import datetime
 
 from .models import AuthTransaction, NotificationLog
+
+
+class PendingAuthListView(LoginRequiredMixin, ListView):
+    """
+    대기 중인 인증 요청 리스트 뷰
+    - PENDING 상태의 요청만 표시
+    - 만료되지 않은 요청만 표시
+    """
+    model = AuthTransaction
+    template_name = 'auth_transactions/pending_list.html'
+    context_object_name = 'pending_list'
+    paginate_by = 20
+    login_url = reverse_lazy('accounts:login')
+    
+    def get_queryset(self):
+        """대기 중이고 만료되지 않은 요청만"""
+        from django.db.models import Q
+        return AuthTransaction.objects.filter(
+            user=self.request.user,
+            status='PENDING',
+            expires_at__gt=timezone.now()
+        ).select_related('service_provider').order_by('-created_at')
 
 
 class AuthHistoryListView(LoginRequiredMixin, ListView):
@@ -108,3 +134,74 @@ class TransactionDetailView(LoginRequiredMixin, DetailView):
         ).order_by('-sent_at')
         
         return context
+
+
+class ConfirmTransactionView(LoginRequiredMixin, View):
+    """
+    웹에서 인증 트랜잭션 승인/거부 처리
+    POST 요청으로 PIN 검증 후 처리
+    """
+    login_url = reverse_lazy('accounts:login')
+    
+    def post(self, request, transaction_id):
+        """승인 또는 거부 처리"""
+        # 트랜잭션 조회 (본인 것만)
+        transaction = get_object_or_404(
+            AuthTransaction,
+            transaction_id=transaction_id,
+            user=request.user
+        )
+        
+        # 상태 확인
+        if transaction.status != 'PENDING':
+            messages.error(request, '이미 처리된 요청입니다.')
+            return redirect('auth_transactions:transaction_detail', transaction_id=transaction_id)
+        
+        # 만료 확인
+        if transaction.is_expired:
+            transaction.status = 'EXPIRED'
+            transaction.failure_reason = '요청이 만료되었습니다.'
+            transaction.save()
+            messages.error(request, '만료된 요청입니다.')
+            return redirect('auth_transactions:transaction_detail', transaction_id=transaction_id)
+        
+        # 액션 확인
+        action = request.POST.get('action')  # 'approve' 또는 'reject'
+        
+        if action == 'approve':
+            # PIN 검증
+            pin = request.POST.get('pin')
+            
+            if not pin:
+                messages.error(request, 'PIN을 입력해주세요.')
+                return redirect('auth_transactions:transaction_detail', transaction_id=transaction_id)
+            
+            # PIN 검증 (User 모델의 check_pin 메서드 사용)
+            try:
+                if not request.user.check_pin(pin):
+                    messages.error(request, f'PIN이 올바르지 않습니다. 입력한 PIN: {pin}')
+                    return redirect('auth_transactions:transaction_detail', transaction_id=transaction_id)
+            except Exception as e:
+                messages.error(request, f'PIN 검증 오류: {str(e)}')
+                return redirect('auth_transactions:transaction_detail', transaction_id=transaction_id)
+            
+            # 승인 처리
+            transaction.status = 'COMPLETED'
+            transaction.confirmed_at = timezone.now()
+            transaction.save()
+            
+            messages.success(request, f'인증 요청을 승인했습니다. (Transaction: {transaction_id})')
+            
+        elif action == 'reject':
+            # 거부 처리
+            transaction.status = 'FAILED'
+            transaction.failure_reason = '사용자가 거부함'
+            transaction.confirmed_at = timezone.now()
+            transaction.save()
+            
+            messages.warning(request, '인증 요청을 거부했습니다.')
+        
+        else:
+            messages.error(request, '잘못된 요청입니다.')
+        
+        return redirect('auth_transactions:transaction_detail', transaction_id=transaction_id)

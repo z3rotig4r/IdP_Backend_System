@@ -101,11 +101,35 @@ Running migrations:
 ```
 
 ### 3. 초기 데이터 생성
-```bash
-# 슈퍼유저 생성
-python3 manage.py createsuperuser
 
-# 초기 데이터 로드 (선택사항)
+#### 슈퍼유저 생성
+
+**방법 1: 자동 생성 스크립트 (권장)**
+```bash
+python3 scripts/setup_initial_data.py
+```
+
+**방법 2: 대화형 생성**
+```bash
+python3 manage.py createsuperuser
+```
+
+슈퍼유저 생성 시 다음 형식으로 입력하세요:
+- **Username**: admin (또는 원하는 username)
+- **전화번호**: `010-0000-0000` (반드시 `010-XXXX-XXXX` 형식)
+- **Email**: admin@idp.com
+- **Password**: admin123! (8자 이상)
+
+**이미 생성된 슈퍼유저:**
+```
+Username: admin
+Password: admin123!
+전화번호: 010-0000-0000
+PIN: 000000
+```
+
+**초기 데이터 로드 (선택사항)**
+```bash
 python3 manage.py loaddata initial_data.json
 ```
 
@@ -254,9 +278,16 @@ http://127.0.0.1:8000/auth/history/
 ```
 http://127.0.0.1:8000/admin/
 ```
-- 슈퍼유저 로그인 필요
-- 모든 모델 관리
+
+**슈퍼유저 로그인 정보:**
+- Username: `admin`
+- Password: `admin123!`
+
+**기능:**
+- 모든 모델 관리 (User, ServiceProvider, AuthTransaction 등)
 - CI/DI 마스킹 표시
+- 감사 로그 조회
+- 통계 및 리포트
 
 ---
 

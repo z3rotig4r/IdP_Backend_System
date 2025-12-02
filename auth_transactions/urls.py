@@ -14,7 +14,9 @@ urlpatterns = [
     path('api/status/<uuid:transaction_id>/', views.auth_status, name='api_auth_status'),
     
     # Web Views (Class-Based Views - MTV Pattern)
+    path('pending/', web_views.PendingAuthListView.as_view(), name='auth_pending'),
     path('history/', web_views.AuthHistoryListView.as_view(), name='auth_history'),
     path('detail/<uuid:transaction_id>/', web_views.TransactionDetailView.as_view(), name='transaction_detail'),
+    path('confirm/<uuid:transaction_id>/', web_views.ConfirmTransactionView.as_view(), name='confirm_transaction'),
 ]
 

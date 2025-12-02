@@ -101,7 +101,7 @@ def auth_request(request):
                 )
             
             # 3. Create AuthTransaction
-            expires_at = timezone.now() + timedelta(minutes=3)
+            expires_at = timezone.now() + timedelta(minutes=10)
             auth_tx = AuthTransaction.objects.create(
                 user=user,
                 service_provider=service_provider,

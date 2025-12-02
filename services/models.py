@@ -74,8 +74,8 @@ class ServiceProvider(models.Model):
         return hashlib.sha256(raw_secret.encode()).hexdigest()
     
     def check_secret(self, raw_secret):
-        """Verify client secret"""
-        return self.client_secret == self.hash_secret(raw_secret)
+        """Verify client secret - 평문 비교 (해시는 이미 저장됨)"""
+        return self.client_secret == raw_secret
     
     def __str__(self):
         return f"{self.service_name} ({self.client_id})"
